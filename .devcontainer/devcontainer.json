@@ -1,8 +1,13 @@
 {
   "name": "deno-jupyter",
   "image": "mcr.microsoft.com/devcontainers/base:latest",
-  "features": {
-    "ghcr.io/devcontainers/features/deno:latest": {}
+
+  "remoteEnv": {
+    "DENO_INSTALL": "/home/vscode/.deno",
+    "PATH": "${containerEnv:PATH}:/home/vscode/.deno/bin"
   },
+
+  "onCreateCommand": "bash -lc \"curl -fsSL https://deno.land/install.sh | sh -s -- -y\"",
+
   "postCreateCommand": "deno jupyter --install --display 'Deno'"
 }
