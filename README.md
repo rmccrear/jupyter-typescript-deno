@@ -1,101 +1,124 @@
-# HOW TO: TypeScript (Deno) in Jupyter — quick setup and GitHub Models usage
+# 🦕 Deno + Jupyter Dev Container
 
-This guide documents the steps we used in this workspace to:
-- Install Deno
-- Install and/or use JupyterLab
-- Register the Deno Jupyter kernel
-- Run a working GitHub Models inference request from a Deno notebook (models.github.ai)
+This repository provides a ready-to-use **VS Code Dev Container** that lets you write and run **Deno** code directly inside Jupyter Notebooks (`.ipynb`).
+It automatically installs:
 
-Follow these steps in the devcontainer or your local machine. Commands assume a Bash shell.
-
----
-
-## 1) Prerequisites
-- Deno (we used a recent Deno release)
-- Python 3 and pip (for installing Jupyter if needed)
-- A GitHub token with access to the Models endpoint(s) you plan to use. Set it as an env var named `GITHUB_TOKEN`.
-
-Keep your token private. Example (do not paste the real token in public):
-
-```bash
-export GITHUB_TOKEN="ghp_..."
-```
-
-Optionally set these environment variables to control host/model:
-
-```bash
-# models.github.ai is the inference host we used
-export GITHUB_MODELS_URL="https://models.github.ai"
-# choose a model (we used "openai/gpt-4.1" successfully)
-export GITHUB_MODEL="openai/gpt-4.1"
-```
+✅ Deno
+✅ Deno Jupyter kernel
+✅ Jupyter VS Code extensions
+✅ Example Deno notebook using GitHub Models API
 
 ---
 
-## 2) Install Deno
-Install Deno with the official installer (this installs to `~/.deno` by default):
+## 🚀 Getting Started
 
-```bash
-curl -fsSL https://deno.land/install.sh | sh
+1. **Open this repository in VS Code**
+2. When prompted, click **“Reopen in Dev Container”**
+3. After the container builds, open `example-deno-notebook.ipynb` (If it does not render properly, wait for the container to complete its loading phase and try again)
+4. Select **Kernel → Deno**
+5. Run cells!
+
+---
+
+## 📁 Project Structure
+
 ```
-
-After install, add Deno to your PATH (the installer can do this for you). In `~/.bashrc`:
-
-```bash
-export DENO_INSTALL="$HOME/.deno"
-export PATH="$DENO_INSTALL/bin:$PATH"
-```
-
-Then reload the shell:
-
-```bash
-source ~/.bashrc
-deno --version
+.
+├── .devcontainer/
+│   └── devcontainer.json
+├── example-deno-notebook.ipynb
+└── README.md
 ```
 
 ---
 
-## 3) Ensure Jupyter is available
-If JupyterLab is not installed, install it with pip:
+## ⚙️ Dev Container Configuration
 
-```bash
-python3 -m pip install --upgrade pip
-pip install jupyterlab
+The Dev Container installs Deno and registers it as a Jupyter kernel:
+
+```jsonc
+{
+  "name": "deno-jupyter",
+  "image": "mcr.microsoft.com/devcontainers/base:latest",
+
+  "remoteUser": "vscode",
+
+  "remoteEnv": {
+    "DENO_INSTALL": "/home/vscode/.deno",
+    "PATH": "${containerEnv:PATH}:/home/vscode/.deno/bin"
+  },
+
+  "onCreateCommand": "bash -lc \"set -e; curl -fsSL https://deno.land/install.sh | sh -s -- -y; /home/vscode/.deno/bin/deno jupyter --install --display 'Deno'\"",
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-toolsai.jupyter",
+        "ms-toolsai.jupyter-renderers",
+        "ms-toolsai.jupyter-keymap"
+      ]
+    }
+  }
+}
 ```
-
-You can start JupyterLab (no browser) with:
-
-```bash
-jupyter lab --no-browser --ip=127.0.0.1 --port=8888
-```
-
-Tip: start Jupyter from the same shell where `GITHUB_TOKEN` and Deno are available so kernels inherit those env vars.
 
 ---
 
-## 4) Register the Deno kernel for Jupyter
-Deno provides a `jupyter` subcommand to install a kernelspec. Run:
+## 🔐 Environment Variables
+
+This example uses the **GitHub Models API**.
+It requires authentication using `GITHUB_TOKEN`.
+
+### ✅ In GitHub Codespaces
+
+**GitHub Codespaces automatically provides a `GITHUB_TOKEN`**, so most users won’t need to configure anything.
+
+You can check by running:
 
 ```bash
-deno jupyter --install --display "Deno"
+echo $GITHUB_TOKEN
 ```
 
-Confirm Jupyter sees the kernel:
-
-```bash
-jupyter kernelspec list
-# you should see a `deno` entry
-```
-
-If VS Code does not list the kernel, restart the Jupyter server or restart VS Code. If VS Code uses a managed Jupyter server, prefer connecting it to a local server you started (see Troubleshooting below).
+If it prints a token value, you're all set.
 
 ---
 
-## 5) Example: Call the working inference host (models.github.ai) from a Deno notebook
-Create a TypeScript cell (Deno kernel) and paste this snippet. It uses `models.github.ai/inference/chat/completions` (this is the host that worked in our session):
+### 🛠 If You’re Running Locally or the Token is Missing
+
+You can manually provide `GITHUB_TOKEN` in several ways:
+
+**Option 1 – `devcontainer.json`**
+
+```json
+"containerEnv": {
+  "GITHUB_TOKEN": "your_token_here"
+}
+```
+
+**Option 2 – `.env` file**
+
+```
+GITHUB_TOKEN=your_token_here
+```
+
+**Option 3 – Terminal (before launching VS Code)**
+
+```bash
+export GITHUB_TOKEN=your_token_here
+```
+
+Other optional variables:
+
+| Variable            | Default                    | Purpose               |
+| ------------------- | -------------------------- | --------------------- |
+| `GITHUB_MODEL`      | `openai/gpt-4.1`           | Model to use          |
+| `GITHUB_MODELS_URL` | `https://models.github.ai` | API endpoint override |
+
+---
+
+## 📓 Example Notebook Code (`example-deno-notebook.ipynb`)
 
 ```ts
-// Deno kernel — call GitHub Models inference endpoint (chat completion)
 const token = Deno.env.get("GITHUB_TOKEN");
 if (!token) throw new Error("GITHUB_TOKEN environment variable is not set.");
 
@@ -135,42 +158,29 @@ if (!resp.ok) {
 }
 ```
 
-Notes:
-- We included `X-GitHub-Api-Version: 2022-11-28` because some GitHub endpoints require a supported version header. If you previously saw a 400 error complaining about the version, use `2022-11-28` (or omit the header).
-- If you want to call `api.github.com/responses` instead, that can work for some accounts but may return 404 if your account/org doesn't have access to that API surface.
-
 ---
 
-## 6) VS Code: selecting the Deno kernel in a notebook
-1. Open the notebook (`.ipynb`) in VS Code.
-2. Click the kernel selector in the top-right of the notebook editor (it might say "Select Kernel").
-3. Choose `Deno` (or the display name you used when installing the kernelspec).
-4. If the kernel isn't listed, restart the Jupyter server and try again; ensure you installed the kernelspec in the same user as the server.
+## ✅ Example Output
 
-Quick test cell to run in the Deno kernel:
-
-```ts
-console.log("Deno version:", Deno.version);
-console.log("GITHUB_TOKEN visible:", Boolean(Deno.env.get("GITHUB_TOKEN")));
+```
+Model reply:
+Paris is the capital of France.
 ```
 
 ---
 
-## 7) Troubleshooting
-- 400 with `/user` complaining about `X-GitHub-Api-Version`: use `2022-11-28` or remove the header. GitHub will report supported versions in the error.
-- 404 when calling `api.github.com/responses`: token is valid but your account or Enterprise server may not expose the Responses API. Try `models.github.ai` (inference host) or check your org/account access for GitHub Models.
-- `deno jupyter --install` did not add a visible kernel: run `jupyter kernelspec list` to locate the kernel directory. Backups are created under `~/.deno/.shellRcBackups/` if the installer modified shell files.
-- If notebook kernels don't inherit env vars: start Jupyter from the same shell where you exported `GITHUB_TOKEN` so the kernel process inherits it.
+## 💡 Tips
 
----
+* If the **Deno kernel doesn’t appear**, run:
+  **Command Palette → Developer: Reload Window**
+* To create a new Notebook, run:  **Command Palette → Create: New Jupyter Notebook**
+* To view installed kernels:
 
-## 8) Next steps / enhancements
-- Add a small notebook cell with a text input widget to prompt for questions interactively.
-- Add streaming support if you want token-by-token updates (requires streaming endpoint support).
-- Add example wrappers that save responses to a local file or convert them to markdown cells.
+  ```bash
+  ls ~/.local/share/jupyter/kernels
+  ```
+* To upgrade Deno:
 
-If you want, I can add an interactive cell to the `notebooks/ask_github_model_deno.ipynb` notebook that prompts for a question and runs the working `models.github.ai` snippet.
-
----
-
-End of guide.
+  ```bash
+  deno upgrade
+  ```
