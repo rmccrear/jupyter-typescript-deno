@@ -1,0 +1,8 @@
+{
+  "name": "deno-jupyter",
+  "image": "mcr.microsoft.com/devcontainers/base:latest",
+  "features": {
+    "ghcr.io/devcontainers-contrib/features/deno:2": {}
+  },
+  "postCreateCommand": "deno jupyter --install --display 'Deno'"
+}
